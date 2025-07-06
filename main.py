@@ -1081,7 +1081,7 @@ with st.sidebar:
         <div style="text-align: center; color: #6b7280; font-size: 0.8rem;">
             <img src="data:image/png;base64,{logo_base64}" style="height: 30px; margin-bottom: 10px;" alt="Logo"/>
             <p>Made with ❤️ using Streamlit & Google AI</p>
-            <p>© 2025 AI Web Scraper</p>
+            <p>© 2025 Janith Prabash</p>
         </div>
         """, unsafe_allow_html=True)
     else:
