@@ -23,3 +23,17 @@ if st.button("Fetch Data"):
 
     with st.expander("View DOM Content"):
         st.write("DOM Content", cleaned_content, height=300)
+
+
+if "dom_content" in st.session_state:
+    parse_description = st.text_area(
+        "Describe what you want to pars?"
+    )
+
+    if st.button("Parse Content"):
+        if parse_description:
+            st.write("Parsing the content")
+
+            dom_chunks = split_dom_content(
+                st.session_state.dom_content
+            )
