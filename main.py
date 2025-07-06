@@ -279,7 +279,7 @@ if logo_base64:
     st.markdown(f"""
     <div class="main-header fade-in">
         <img src="data:image/png;base64,{logo_base64}" style="height: 180px; margin-bottom: 0px;" alt="DataHawk Logo"/>
-        <p class="main-subtitle">AI-Powered Web Scraping Revolution</p>
+        <p class="main-subtitle">AI-Powered Web Scraping Revolution-Janith Prabash</p>
     </div>
     """, unsafe_allow_html=True)
 else:
@@ -287,7 +287,7 @@ else:
     st.markdown("""
     <div class="main-header fade-in">
         <h1 class="main-title">🦅 DataHawk</h1>
-        <p class="main-subtitle">AI-Powered Web Scraping Revolution</p>
+        <p class="main-subtitle">AI-Powered Web Scraping Revolution-Janith Prabash</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -900,6 +900,6 @@ with st.sidebar:
         st.markdown("""
         <div style="text-align: center; color: #6b7280; font-size: 0.8rem;">
             <p>Made with ❤️ using Streamlit & Google AI</p>
-            <p>© 2025 AI Web Scraper</p>
+            <p>© 2025 Janith Prabash</p>
         </div>
         """, unsafe_allow_html=True)
