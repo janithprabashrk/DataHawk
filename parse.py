@@ -1,5 +1,12 @@
-from langchain_ollama import OllamaLLM
-from langchain_core.prompts import ChatPromptTemplate
+import google.generativeai as genai
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+# Configure Gemini API
+genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
 
 template = (
     "You are tasked with extracting specific information from the following text content: {dom_content}. "
@@ -10,20 +17,28 @@ template = (
     "4. **Direct Data Only:** Your output should contain only the data that is explicitly requested, with no other text."
 )
 
+# Initialize Gemini model
+model = genai.GenerativeModel('gemini-1.5-flash')
 
-model = OllamaLLM(model="llama3.1:latest")
-
-def parse_with_ollama(dom_chunks, parse_description):
-    prompt = ChatPromptTemplate.from_template(template)
-    chain = prompt | model 
-
+def parse_with_gemini(dom_chunks, parse_description):
     parsed_results = []
 
     for i, chunk in enumerate(dom_chunks, start=1):
-        response = chain.invoke(
-            {"dom_content": chunk, "parse_description": parse_description}
+        try:
+            # Create the prompt with the template
+            prompt = template.format(
+                dom_content=chunk, 
+                parse_description=parse_description
             )
-        print(f"Parsed batch {i} of {len(dom_chunks)}")
-        parsed_results.append(response)
+            
+            # Generate response using Gemini
+            response = model.generate_content(prompt)
+            
+            print(f"Parsed batch {i} of {len(dom_chunks)}")
+            parsed_results.append(response.text)
+            
+        except Exception as e:
+            print(f"Error parsing batch {i}: {str(e)}")
+            parsed_results.append("")
 
     return "\n".join(parsed_results)
