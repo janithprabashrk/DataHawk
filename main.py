@@ -6,6 +6,7 @@ from scrape import (
     clean_body_content
 )
 from parse import parse_with_gemini
+import pandas as pd
 import re
 import time
 import base64
@@ -517,14 +518,14 @@ if "dom_content" in st.session_state:
             st.markdown("""
             <div class="feature-box">
                 <h6 style="color: #667eea; margin: 0 0 0.5rem 0;">🛍️ E-commerce</h6>
-                <p style="margin: 0; font-size: 0.9rem;">"Extract all product names, prices, and ratings"</p>
+                <p style="margin: 0; font-size: 0.9rem;">"Extract all product names and prices in table format"</p>
             </div>
             """, unsafe_allow_html=True)
             
             st.markdown("""
             <div class="feature-box">
                 <h6 style="color: #667eea; margin: 0 0 0.5rem 0;">📰 News & Articles</h6>
-                <p style="margin: 0; font-size: 0.9rem;">"Get article titles, authors, and publication dates"</p>
+                <p style="margin: 0; font-size: 0.9rem;">"Get article titles, authors, and dates as structured data"</p>
             </div>
             """, unsafe_allow_html=True)
         
@@ -532,14 +533,14 @@ if "dom_content" in st.session_state:
             st.markdown("""
             <div class="feature-box">
                 <h6 style="color: #667eea; margin: 0 0 0.5rem 0;">📞 Contact Info</h6>
-                <p style="margin: 0; font-size: 0.9rem;">"Find all email addresses, phone numbers, and addresses"</p>
+                <p style="margin: 0; font-size: 0.9rem;">"Find all contact details organized in table view"</p>
             </div>
             """, unsafe_allow_html=True)
             
             st.markdown("""
             <div class="feature-box">
                 <h6 style="color: #667eea; margin: 0 0 0.5rem 0;">💼 Job Listings</h6>
-                <p style="margin: 0; font-size: 0.9rem;">"Extract job titles, companies, salaries, and locations"</p>
+                <p style="margin: 0; font-size: 0.9rem;">"Extract job data in: Title | Company | Salary format"</p>
             </div>
             """, unsafe_allow_html=True)
     
@@ -547,7 +548,7 @@ if "dom_content" in st.session_state:
     st.markdown('<h3 style="color:#e0e0e0;">📝 Describe Your Data Extraction</h3>', unsafe_allow_html=True)
     parse_description = st.text_area(
         "What would you like to extract?",
-        placeholder="Be specific! For example:\n• Extract all product names and their prices\n• Get all email addresses and contact information\n• Find job titles, companies, and salary ranges\n• List all article headlines and authors",
+        placeholder="Be specific! For example:\n• Extract all book titles and prices in table format\n• Get product name | price | rating for easy viewing\n• Find contact info: Name - Email - Phone structure\n• List jobs as: Title | Company | Salary | Location",
         height=120,
         label_visibility="collapsed"
     )
@@ -662,6 +663,75 @@ if "dom_content" in st.session_state:
                     
                     result = "\n".join(parsed_results)
                     
+                    # Process and format results for better display
+                    def format_results_as_table(text):
+                        """Convert structured text data into a pandas DataFrame if possible"""
+                        import pandas as pd
+                        import re
+                        
+                        lines = [line.strip() for line in text.split('\n') if line.strip()]
+                        if not lines:
+                            return None, text
+                        
+                        # Try to detect common separators and patterns
+                        separators = [' - ', ' | ', '\t', ':', ' , ', ', ']
+                        table_data = []
+                        headers = []
+                        
+                        # Check if data looks like structured rows
+                        for separator in separators:
+                            if all(separator in line for line in lines[:min(5, len(lines))]):
+                                # Found consistent separator
+                                for i, line in enumerate(lines):
+                                    parts = [part.strip() for part in line.split(separator)]
+                                    if i == 0:
+                                        # Use first row structure to determine headers
+                                        if len(parts) == 2:
+                                            headers = ['Item', 'Value']
+                                        elif len(parts) == 3:
+                                            headers = ['Name', 'Price', 'Rating']
+                                        elif len(parts) == 4:
+                                            headers = ['Title', 'Price', 'Rating', 'Status']
+                                        else:
+                                            headers = [f'Column {j+1}' for j in range(len(parts))]
+                                    
+                                    if len(parts) == len(headers):
+                                        table_data.append(parts)
+                                
+                                if len(table_data) > 1:
+                                    try:
+                                        df = pd.DataFrame(table_data, columns=headers)
+                                        return df, text
+                                    except:
+                                        continue
+                        
+                        # Try to detect price patterns (common in e-commerce)
+                        price_pattern = r'([^$£€¥₹]+)[\s\-]+[\$£€¥₹]?(\d+\.?\d*)'
+                        matches = re.findall(price_pattern, text)
+                        if len(matches) >= 3:
+                            df = pd.DataFrame(matches, columns=['Product', 'Price'])
+                            return df, text
+                        
+                        # Try to detect email/contact patterns
+                        email_pattern = r'([^@\s]+@[^@\s]+\.[^@\s]+)'
+                        phone_pattern = r'(\+?\d{1,3}[-.\s]?\(?\d{1,4}\)?[-.\s]?\d{1,4}[-.\s]?\d{1,9})'
+                        
+                        emails = re.findall(email_pattern, text)
+                        phones = re.findall(phone_pattern, text)
+                        
+                        if emails or phones:
+                            contact_data = []
+                            for email in emails:
+                                contact_data.append(['Email', email])
+                            for phone in phones:
+                                contact_data.append(['Phone', phone])
+                            
+                            if contact_data:
+                                df = pd.DataFrame(contact_data, columns=['Type', 'Contact'])
+                                return df, text
+                        
+                        return None, text
+                    
                     # Beautiful results display - Dark theme
                     if result.strip():
                         st.markdown("""
@@ -680,21 +750,79 @@ if "dom_content" in st.session_state:
                         st.markdown('<div class="custom-card">', unsafe_allow_html=True)
                         st.markdown('<h3 style="color:#e0e0e0;">📊 Extracted Data</h3>', unsafe_allow_html=True)
                         
-                        # Results text area with custom styling
-                        st.text_area(
-                            "Your extracted data:",
-                            result,
-                            height=300,
-                            disabled=True,
-                            label_visibility="collapsed"
-                        )
+                        # Try to format as table
+                        df, raw_text = format_results_as_table(result)
+                        
+                        # Display format selector
+                        col1, col2 = st.columns([3, 1])
+                        with col1:
+                            st.markdown('<h4 style="color:#e0e0e0;">📋 Results Display</h4>', unsafe_allow_html=True)
+                        with col2:
+                            if df is not None:
+                                display_format = st.selectbox(
+                                    "Format:",
+                                    ["📊 Table View", "📝 Raw Text"],
+                                    label_visibility="collapsed"
+                                )
+                            else:
+                                display_format = "📝 Raw Text"
+                        
+                        # Display results based on selected format
+                        if df is not None and display_format == "📊 Table View":
+                            st.markdown("""
+                            <div style="background: #333333; padding: 1rem; border-radius: 10px; 
+                                        border-left: 4px solid #667eea; border: 1px solid #555555; margin: 1rem 0;">
+                                <h6 style="color: #667eea; margin: 0 0 1rem 0;">📊 Structured Data Table</h6>
+                            </div>
+                            """, unsafe_allow_html=True)
+                            
+                            # Custom styled dataframe
+                            st.dataframe(
+                                df,
+                                use_container_width=True,
+                                hide_index=True,
+                                column_config={
+                                    col: st.column_config.TextColumn(
+                                        width="medium",
+                                        help=f"Data from {col} column"
+                                    ) for col in df.columns
+                                }
+                            )
+                            
+                            # Table statistics
+                            col1, col2, col3 = st.columns(3)
+                            with col1:
+                                st.metric("📊 Rows", len(df))
+                            with col2:
+                                st.metric("📋 Columns", len(df.columns))
+                            with col3:
+                                st.metric("📈 Data Points", len(df) * len(df.columns))
+                        
+                        else:
+                            # Raw text display with better formatting
+                            st.markdown("""
+                            <div style="background: #333333; padding: 1rem; border-radius: 10px; 
+                                        border-left: 4px solid #667eea; border: 1px solid #555555; margin: 1rem 0;">
+                                <h6 style="color: #667eea; margin: 0 0 1rem 0;">📝 Raw Text Data</h6>
+                            </div>
+                            """, unsafe_allow_html=True)
+                            
+                            # Results text area with custom styling
+                            st.text_area(
+                                "Your extracted data:",
+                                result,
+                                height=300,
+                                disabled=True,
+                                label_visibility="collapsed"
+                            )
                         
                         # Action buttons for results
-                        col1, col2, col3 = st.columns([2, 2, 1])
+                        st.markdown('<h4 style="color:#e0e0e0;">💾 Download Options</h4>', unsafe_allow_html=True)
+                        col1, col2, col3 = st.columns([2, 2, 2])
                         
                         with col1:
                             st.download_button(
-                                label="💾 Download Results (TXT)",
+                                label="💾 Download TXT",
                                 data=result,
                                 file_name=f"datahawk_results_{int(time.time())}.txt",
                                 mime="text/plain",
@@ -702,14 +830,44 @@ if "dom_content" in st.session_state:
                             )
                         
                         with col2:
-                            csv_data = result.replace('\n', '\n')  # Keep formatting
-                            st.download_button(
-                                label="📊 Download as CSV",
-                                data=csv_data,
-                                file_name=f"datahawk_results_{int(time.time())}.csv",
-                                mime="text/csv",
-                                use_container_width=True
-                            )
+                            if df is not None:
+                                # Convert DataFrame to CSV
+                                csv_data = df.to_csv(index=False)
+                                st.download_button(
+                                    label="📊 Download CSV",
+                                    data=csv_data,
+                                    file_name=f"datahawk_table_{int(time.time())}.csv",
+                                    mime="text/csv",
+                                    use_container_width=True
+                                )
+                            else:
+                                # Fallback CSV with basic formatting
+                                csv_data = result.replace('\n', '\n')
+                                st.download_button(
+                                    label="📊 Download CSV",
+                                    data=csv_data,
+                                    file_name=f"datahawk_results_{int(time.time())}.csv",
+                                    mime="text/csv",
+                                    use_container_width=True
+                                )
+                        
+                        with col3:
+                            if df is not None:
+                                # Convert DataFrame to JSON
+                                json_data = df.to_json(orient='records', indent=2)
+                                st.download_button(
+                                    label="🗂️ Download JSON",
+                                    data=json_data,
+                                    file_name=f"datahawk_data_{int(time.time())}.json",
+                                    mime="application/json",
+                                    use_container_width=True
+                                )
+                            else:
+                                st.markdown("""
+                                <div style="padding: 0.5rem; text-align: center; color: #6b7280; font-size: 0.9rem;">
+                                    JSON format available for structured data
+                                </div>
+                                """, unsafe_allow_html=True)
                         
                         # Results statistics - Dark theme
                         st.markdown('<h4 style="color:#e0e0e0;">📈 Extraction Statistics</h4>', unsafe_allow_html=True)
@@ -720,9 +878,39 @@ if "dom_content" in st.session_state:
                         with col2:
                             st.metric("📄 Lines", len(result.splitlines()))
                         with col3:
-                            st.metric("🔍 Chunks Processed", len(dom_chunks))
+                            if df is not None:
+                                st.metric("� Table Rows", len(df))
+                            else:
+                                st.metric("�🔍 Chunks Processed", len(dom_chunks))
                         with col4:
                             st.metric("⚡ Words Found", len(result.split()))
+                        
+                        # Additional formatting tips if table view is available
+                        if df is not None:
+                            with st.expander("💡 Table Formatting Tips"):
+                                st.markdown("""
+                                **✅ Your data was automatically formatted into a table because:**
+                                - Consistent separators were detected (-, |, :, etc.)
+                                - Structured patterns were found (prices, contacts, etc.)
+                                - Data appears to have multiple columns
+                                
+                                **📊 Available formats:**
+                                - **Table View**: Clean, sortable columns
+                                - **Raw Text**: Original extracted format
+                                - **CSV Download**: Spreadsheet compatible
+                                - **JSON Download**: API/database ready
+                                """)
+                        else:
+                            with st.expander("💡 Want table formatting?"):
+                                st.markdown("""
+                                **To get automatic table formatting, try prompts like:**
+                                - "Extract book titles and prices separated by hyphen"
+                                - "Get product name | price | rating format"
+                                - "List items in: Title - Price - Stock format"
+                                - "Find all contacts with name: email format"
+                                
+                                **The AI will try to structure your data for better table display!**
+                                """)
                         
                         st.markdown('</div>', unsafe_allow_html=True)
                         
@@ -875,12 +1063,12 @@ with st.sidebar:
     if st.button("💡 Show Parsing Examples", use_container_width=True):
         st.markdown('<h3 style="color:#e0e0e0;">📝 Parsing Examples</h3>', unsafe_allow_html=True)
         examples = [
-            "**E-commerce:** Extract all product names and prices",
-            "**News:** Get article titles, authors, and dates",
-            "**Contacts:** Find all email addresses and phone numbers",
-            "**Jobs:** List job titles, companies, and salaries",
-            "**Reviews:** Extract ratings, comments, and reviewer names",
-            "**Social:** Get usernames, posts, and engagement metrics"
+            "**E-commerce:** Extract all product names and prices in table format",
+            "**News:** Get article titles, authors, and dates as structured data",
+            "**Contacts:** Find all contact details organized in table view",
+            "**Jobs:** Extract job data in: Title | Company | Salary format",
+            "**Reviews:** Get ratings and comments with structured layout",
+            "**Social:** Extract user data in organized table format"
         ]
         
         for example in examples:
