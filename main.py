@@ -8,6 +8,17 @@ from scrape import (
 from parse import parse_with_gemini
 import re
 import time
+import base64
+import os
+
+def get_logo_base64():
+    """Convert logo.png to base64 string for HTML embedding"""
+    try:
+        logo_path = os.path.join(os.path.dirname(__file__), "logo.png")
+        with open(logo_path, "rb") as f:
+            return base64.b64encode(f.read()).decode()
+    except FileNotFoundError:
+        return None
 
 # Page configuration
 st.set_page_config(
@@ -262,13 +273,23 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# Beautiful Dark Theme Header
-st.markdown("""
-<div class="main-header fade-in">
-    <h1 class="main-title">🦅 DataHawk</h1>
-    <p class="main-subtitle">AI-Powered Web Scraping Revolution</p>
-</div>
-""", unsafe_allow_html=True)
+# Beautiful Dark Theme Header with Logo
+logo_base64 = get_logo_base64()
+if logo_base64:
+    st.markdown(f"""
+    <div class="main-header fade-in">
+        <img src="data:image/png;base64,{logo_base64}" style="height: 180px; margin-bottom: 0px;" alt="DataHawk Logo"/>
+        <p class="main-subtitle">AI-Powered Web Scraping Revolution</p>
+    </div>
+    """, unsafe_allow_html=True)
+else:
+    # Fallback if logo is not found
+    st.markdown("""
+    <div class="main-header fade-in">
+        <h1 class="main-title">🦅 DataHawk</h1>
+        <p class="main-subtitle">AI-Powered Web Scraping Revolution</p>
+    </div>
+    """, unsafe_allow_html=True)
 
 # Statistics/Metrics Row - Dark theme
 col1, col2, col3, col4 = st.columns(4)
@@ -306,7 +327,7 @@ with col4:
     """, unsafe_allow_html=True)
 
 # Main content in a card
-st.markdown('<div class="custom-card fade-in">', unsafe_allow_html=True)
+# st.markdown('<div class="custom-card fade-in">', unsafe_allow_html=True)
 
 # URL Input Section - Dark theme
 st.markdown('<h3 style="color:#e0e0e0;">🌐 Enter Target Website</h3>', unsafe_allow_html=True)
@@ -320,7 +341,7 @@ with col1:
     )
 
 with col2:
-    st.markdown("<br>", unsafe_allow_html=True)  # Space for alignment
+    # st.markdown("<br>", unsafe_allow_html=True)  # Space for alignment
 
     # Fetch button with better styling
     fetch_button = st.button("🚀 Fetch Data", type="primary", use_container_width=True)
@@ -376,7 +397,7 @@ if fetch_button:
                 st.markdown("""
                 <div style="text-align: center; padding: 2rem; background: #2a2a2a; border-radius: 15px; border: 1px solid #404040;">
                     <div class="loading-spinner"></div>
-                    <h4 style="margin-top: 1rem; color: #667eea;">🚀 Launching DataHawk...</h4>
+                    <h4 style="margin-top: 1rem; color: #667eea;">🚀 Initializing AI Scraper...</h4>
                     <p style="color: #b0b0b0;">Connecting to website and extracting content</p>
                 </div>
                 """, unsafe_allow_html=True)
@@ -742,20 +763,30 @@ if "dom_content" in st.session_state:
 
 # Enhanced Sidebar with Beautiful Dark Design
 with st.sidebar:
-    # Sidebar Header - Dark theme
-    st.markdown("""
-    <div style="background: linear-gradient(135deg, #2d1b69 0%, #11998e 100%); 
-                padding: 2rem; border-radius: 15px; text-align: center; margin-bottom: 2rem; border: 1px solid #333;">
-        <h2 style="color: white; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">🦅 DataHawk</h2>
-        <p style="color: rgba(255,255,255,0.9); margin: 0.5rem 0 0 0;">AI Web Scraping Tool</p>
-    </div>
-    """, unsafe_allow_html=True)
+    # Sidebar Header with Logo - Dark theme
+    if logo_base64:
+        st.markdown(f"""
+        <div style="background: linear-gradient(135deg, #2d1b69 0%, #11998e 100%); 
+                    padding: 2rem; border-radius: 15px; text-align: center; margin-bottom: 2rem; border: 1px solid #333;">
+            <img src="data:image/png;base64,{logo_base64}" style="height: 80px; margin-bottom: 10px;" alt="DataHawk Logo"/>
+            <p style="color: rgba(255,255,255,0.9); margin: 0.5rem 0 0 0;">AI Web Scraping Tool</p>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        # Fallback if logo is not found
+        st.markdown("""
+        <div style="background: linear-gradient(135deg, #2d1b69 0%, #11998e 100%); 
+                    padding: 2rem; border-radius: 15px; text-align: center; margin-bottom: 2rem; border: 1px solid #333;">
+            <h2 style="color: white; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">🦅 DataHawk</h2>
+            <p style="color: rgba(255,255,255,0.9); margin: 0.5rem 0 0 0;">AI Web Scraping Tool</p>
+        </div>
+        """, unsafe_allow_html=True)
     
     # About Section - Dark theme
-    st.markdown('<h3 style="color:#e0e0e0;">📖 About DataHawk</h3>', unsafe_allow_html=True)
+    st.markdown('<h3 style="color:#e0e0e0;">📖 About Our Platform</h3>', unsafe_allow_html=True)
     st.markdown("""
     <div class="feature-box">
-        <p style="color:#d1d5db;">DataHawk is an intelligent web scraping tool that leverages AI to extract and parse data from any website.</p>
+        <p style="color:#d1d5db;">Our intelligent web scraping tool leverages AI to extract and parse data from any website with precision and speed.</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -857,9 +888,18 @@ with st.sidebar:
     
     # Footer - Dark theme
     st.markdown("---")
-    st.markdown("""
-    <div style="text-align: center; color: #6b7280; font-size: 0.8rem;">
-        <p>Made with ❤️ using Streamlit & Google AI</p>
-        <p>© 2025 DataHawk - AI Web Scraper</p>
-    </div>
-    """, unsafe_allow_html=True)
+    if logo_base64:
+        st.markdown(f"""
+        <div style="text-align: center; color: #6b7280; font-size: 0.8rem;">
+            <img src="data:image/png;base64,{logo_base64}" style="height: 30px; margin-bottom: 10px;" alt="Logo"/>
+            <p>Made with ❤️ using Streamlit & Google AI</p>
+            <p>© 2025 AI Web Scraper</p>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown("""
+        <div style="text-align: center; color: #6b7280; font-size: 0.8rem;">
+            <p>Made with ❤️ using Streamlit & Google AI</p>
+            <p>© 2025 AI Web Scraper</p>
+        </div>
+        """, unsafe_allow_html=True)
